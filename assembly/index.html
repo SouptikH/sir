@@ -1,48 +1,235 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assembly Dashboard</title>
+
+<style>
+/* ==== USE YOUR EXACT THEME ==== */
+:root{
+  --bg:#0d0d0d;--s1:#161616;--s2:#1e1e1e;--bdr:#2a2a2a;
+  --txt:#e8e8e8;--muted:#888;--accent:#B9BF1F;
+  --font-mono:'Courier New',monospace;
+  --font-sans:'Helvetica Neue',Arial,sans-serif;
+  --font-serif:Georgia,'Times New Roman',serif;
+}
+
+body{background:var(--bg);color:var(--txt);font-family:var(--font-sans);margin:0}
+
+header{
+  padding:32px;
+  border-bottom:1px solid var(--bdr);
+  background:linear-gradient(135deg,#0d0d0d,#161616);
+}
+
+h1{font-family:var(--font-serif);font-size:32px;margin:0}
+.sub{color:var(--muted);font-size:12px;margin-top:6px}
+
+main{max-width:1300px;margin:auto;padding:32px}
+
+/* CARDS */
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--s1);border:1px solid var(--bdr);border-radius:8px;padding:18px}
+.card-lbl{font-size:10px;color:var(--muted);text-transform:uppercase}
+.card-val{font-family:var(--font-mono);font-size:24px}
+
+/* INPUTS */
+select,input{
+  width:100%;
+  margin-top:8px;
+  padding:8px;
+  background:var(--s2);
+  border:1px solid var(--bdr);
+  color:white;
+  border-radius:6px;
+}
+
+/* TABLE */
+.tbl-wrap{border:1px solid var(--bdr);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:var(--s2)}
+th,td{padding:8px;border-bottom:1px solid #222;font-family:var(--font-mono)}
+tr:hover td{background:#151515}
+</style>
+</head>
+
 <body>
-<h1 id="title"></h1>
-<select id="phase"></select>
-<table border="1">
-<thead><tr><th>Part</th><th>EPIC</th><th>Name</th><th>Gender</th></tr></thead>
+
+<header>
+  <h1 id="title"></h1>
+  <div class="sub">SIR Under Adjudicated Data</div>
+</header>
+
+<main>
+
+<!-- CONTROLS -->
+<div class="grid4">
+
+  <div class="card">
+    <div class="card-lbl">Mode</div>
+    <select id="mode">
+      <option value="deletion">Deletion</option>
+      <option value="inclusion">Inclusion</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="card-lbl">Phase</div>
+    <select id="phase"></select>
+  </div>
+
+  <div class="card">
+    <div class="card-lbl">Search</div>
+    <input id="search" placeholder="EPIC / Name">
+  </div>
+
+</div>
+
+<br>
+
+<!-- SUMMARY -->
+<div id="summary" class="grid4"></div>
+
+<br>
+
+<!-- PART -->
+<h3>Part-wise Breakdown</h3>
+<div id="parts" class="grid4"></div>
+
+<br>
+
+<!-- TABLE -->
+<h3>Records</h3>
+<div class="tbl-wrap">
+<table>
+<thead>
+<tr>
+<th>Part</th><th>EPIC</th><th>Name</th><th>Gender</th>
+</tr>
+</thead>
 <tbody id="tbody"></tbody>
 </table>
+</div>
+
+</main>
 
 <script>
 const ac = new URLSearchParams(location.search).get('ac');
 
-fetch(`../data/${ac}/meta.json`)
-.then(r=>r.json())
-.then(meta=>{
-  document.getElementById('title').innerText = meta.ac_name;
-  const sel = document.getElementById('phase');
-  meta.total_phases.forEach(p=>{
-    const o = document.createElement('option');
-    o.value = p;
-    o.innerText = p;
-    sel.appendChild(o);
-  });
-  load();
-  sel.onchange = load;
-});
+let ALL = [];
+let MODE = 'deletion';
 
-function load(){
-  const p = document.getElementById('phase').value;
-  fetch(`../data/${ac}/deletion/phase-${p}.csv`)
-  .then(r=>r.text())
-  .then(t=>{
-    const rows = t.split('\n').slice(1);
-    const tb = document.getElementById('tbody');
-    tb.innerHTML='';
-    rows.forEach(r=>{
-      const c = r.split(',');
-      if(c.length<6) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${c[1]}</td><td>${c[4]}</td><td>${c[5]}</td><td>${c[6]}</td>`;
-      tb.appendChild(tr);
-    });
+async function init(){
+  const meta = await fetch(`../data/${ac}/meta.json`).then(r=>r.json());
+  document.getElementById('title').innerText = meta.ac_no + " - " + meta.ac_name;
+
+  const phaseSel = document.getElementById('phase');
+
+  meta.total_phases.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p;o.innerText="Phase "+p;
+    phaseSel.appendChild(o);
+  });
+
+  phaseSel.onchange = loadPhase;
+  document.getElementById('mode').onchange = e=>{
+    MODE=e.target.value;
+    loadPhase();
+  };
+
+  document.getElementById('search').oninput = render;
+
+  loadSummary(meta);
+  loadPhase();
+}
+
+async function loadPhase(){
+  const p=document.getElementById('phase').value;
+  const txt = await fetch(`../data/${ac}/${MODE}/phase-${p}.csv`).then(r=>r.text());
+
+  ALL = parse(txt);
+  render();
+  renderParts();
+}
+
+function parse(t){
+  return t.split('\n').slice(1).map(r=>{
+    const c=r.split(',');
+    return {
+      part:parseInt(c[1])||0,
+      epic:c[4]||'N/A',
+      name:c[5]||'N/A',
+      gender:c[6]||'N/A',
+      religion:c[9]||'N/A'
+    }
   });
 }
+
+function render(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const data=ALL.filter(d=>d.epic.toLowerCase().includes(q)||d.name.toLowerCase().includes(q));
+
+  data.sort((a,b)=>a.part-b.part);
+
+  const tb=document.getElementById('tbody');
+  tb.innerHTML='';
+
+  data.forEach(d=>{
+    tb.innerHTML+=`<tr>
+      <td>${d.part}</td>
+      <td>${d.epic}</td>
+      <td>${d.name}</td>
+      <td>${d.gender}</td>
+    </tr>`;
+  });
+}
+
+function renderParts(){
+  const map={};
+  ALL.forEach(d=>{
+    if(!map[d.part]) map[d.part]=0;
+    map[d.part]++;
+  });
+
+  const div=document.getElementById('parts');
+  div.innerHTML='';
+
+  Object.keys(map).sort((a,b)=>a-b).forEach(p=>{
+    div.innerHTML+=`
+    <div class="card">
+      <div class="card-lbl">Part ${p}</div>
+      <div class="card-val">${map[p]}</div>
+    </div>`;
+  });
+}
+
+async function loadSummary(meta){
+  let total=0,m=0,f=0,mus=0;
+
+  for(let p of meta.total_phases){
+    const txt=await fetch(`../data/${ac}/deletion/phase-${p}.csv`).then(r=>r.text());
+    const d=parse(txt);
+
+    d.forEach(x=>{
+      total++;
+      if(x.gender==='Male') m++;
+      if(x.gender==='Female') f++;
+      if(x.religion==='Muslim') mus++;
+    });
+  }
+
+  const pop = await fetch(`../data/${ac}/muslim_population.json`).then(r=>r.json());
+
+  document.getElementById('summary').innerHTML=`
+    <div class="card"><div class="card-lbl">Total</div><div class="card-val">${total}</div></div>
+    <div class="card"><div class="card-lbl">Male</div><div class="card-val">${m}</div></div>
+    <div class="card"><div class="card-lbl">Female</div><div class="card-val">${f}</div></div>
+    <div class="card"><div class="card-lbl">Muslim %</div><div class="card-val">${((mus/pop.muslim_population)*100).toFixed(2)}%</div></div>
+  `;
+}
+
+init();
 </script>
 
 </body>
