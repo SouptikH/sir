@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SIR Repository</title>
+</head>
+<body>
+<h1>Assemblies</h1>
+<div id="list"></div>
+
+<script>
+fetch('./data/index.json')
+.then(r=>r.json())
+.then(d=>{
+  const div = document.getElementById('list');
+  d.assemblies.forEach(a=>{
+    const el = document.createElement('div');
+    el.innerHTML = `<a href="./assembly/?ac=${a.id}">${a.name}</a>`;
+    div.appendChild(el);
+  });
+});
+</script>
+
+</body>
+</html>
