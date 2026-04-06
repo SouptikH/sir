@@ -3,110 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>Assembly Dashboard</title>
 
 <style>
-/* ==== USE YOUR EXACT THEME ==== */
 :root{
-  --bg:#0d0d0d;--s1:#161616;--s2:#1e1e1e;--bdr:#2a2a2a;
-  --txt:#e8e8e8;--muted:#888;--accent:#B9BF1F;
-  --font-mono:'Courier New',monospace;
-  --font-sans:'Helvetica Neue',Arial,sans-serif;
-  --font-serif:Georgia,'Times New Roman',serif;
+--bg:#0d0d0d;--s1:#161616;--s2:#1e1e1e;--bdr:#2a2a2a;
+--txt:#e8e8e8;--muted:#888;--accent:#B9BF1F;
+--font-mono:'Courier New',monospace;
+--font-sans:'Arial';
 }
 
-body{background:var(--bg);color:var(--txt);font-family:var(--font-sans);margin:0}
+body{background:var(--bg);color:var(--txt);margin:0;font-family:var(--font-sans)}
 
-header{
-  padding:32px;
-  border-bottom:1px solid var(--bdr);
-  background:linear-gradient(135deg,#0d0d0d,#161616);
-}
+header{padding:30px;border-bottom:1px solid var(--bdr)}
+h1{margin:0}
 
-h1{font-family:var(--font-serif);font-size:32px;margin:0}
-.sub{color:var(--muted);font-size:12px;margin-top:6px}
+main{padding:30px;max-width:1300px;margin:auto}
 
-main{max-width:1300px;margin:auto;padding:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 
-/* CARDS */
-.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.card{background:var(--s1);border:1px solid var(--bdr);border-radius:8px;padding:18px}
-.card-lbl{font-size:10px;color:var(--muted);text-transform:uppercase}
-.card-val{font-family:var(--font-mono);font-size:24px}
+.card{background:var(--s1);border:1px solid var(--bdr);padding:16px;border-radius:8px}
+.card-lbl{font-size:10px;color:var(--muted)}
+.card-val{font-family:var(--font-mono);font-size:22px}
 
-/* INPUTS */
 select,input{
-  width:100%;
-  margin-top:8px;
-  padding:8px;
-  background:var(--s2);
-  border:1px solid var(--bdr);
-  color:white;
-  border-radius:6px;
+width:100%;padding:8px;margin-top:6px;
+background:var(--s2);border:1px solid var(--bdr);color:white;
 }
 
-/* TABLE */
 .tbl-wrap{border:1px solid var(--bdr);border-radius:8px;overflow:hidden}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead{background:var(--s2)}
+table{width:100%;border-collapse:collapse}
 th,td{padding:8px;border-bottom:1px solid #222;font-family:var(--font-mono)}
-tr:hover td{background:#151515}
+thead{background:var(--s2)}
+
+.bar-track{height:8px;background:#222;border-radius:4px;margin-top:6px}
+.bar-fill{height:100%;border-radius:4px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1 id="title"></h1>
-  <div class="sub">SIR Under Adjudicated Data</div>
+<h1 id="title"></h1>
 </header>
 
 <main>
 
-<!-- CONTROLS -->
-<div class="grid4">
+<div class="grid">
 
-  <div class="card">
-    <div class="card-lbl">Mode</div>
-    <select id="mode">
-      <option value="deletion">Deletion</option>
-      <option value="inclusion">Inclusion</option>
-    </select>
-  </div>
+<div class="card">
+<div class="card-lbl">Mode</div>
+<select id="mode">
+<option value="deletion">Deletion</option>
+<option value="inclusion">Inclusion</option>
+</select>
+</div>
 
-  <div class="card">
-    <div class="card-lbl">Phase</div>
-    <select id="phase"></select>
-  </div>
+<div class="card">
+<div class="card-lbl">Phase</div>
+<select id="phase"></select>
+</div>
 
-  <div class="card">
-    <div class="card-lbl">Search</div>
-    <input id="search" placeholder="EPIC / Name">
-  </div>
+<div class="card">
+<div class="card-lbl">Search</div>
+<input id="search">
+</div>
 
 </div>
 
 <br>
 
-<!-- SUMMARY -->
-<div id="summary" class="grid4"></div>
+<div id="summary" class="grid"></div>
 
 <br>
 
-<!-- PART -->
-<h3>Part-wise Breakdown</h3>
-<div id="parts" class="grid4"></div>
+<h3>Muslim Representation</h3>
+<div class="grid">
+
+<div class="card">
+<div>Assembly %</div>
+<div id="asm-val"></div>
+<div class="bar-track"><div id="asm-bar" class="bar-fill" style="background:#4ade80"></div></div>
+</div>
+
+<div class="card">
+<div>List %</div>
+<div id="csv-val"></div>
+<div class="bar-track"><div id="csv-bar" class="bar-fill" style="background:#ff6b6b"></div></div>
+</div>
+
+</div>
 
 <br>
 
-<!-- TABLE -->
+<h3>Part-wise</h3>
+<div id="parts" class="grid"></div>
+
+<br>
+
 <h3>Records</h3>
 <div class="tbl-wrap">
 <table>
 <thead>
-<tr>
-<th>Part</th><th>EPIC</th><th>Name</th><th>Gender</th>
-</tr>
+<tr><th>Part</th><th>EPIC</th><th>Name</th><th>Gender</th></tr>
 </thead>
 <tbody id="tbody"></tbody>
 </table>
@@ -115,118 +115,101 @@ tr:hover td{background:#151515}
 </main>
 
 <script>
-const ac = new URLSearchParams(location.search).get('ac');
+const ac=new URLSearchParams(location.search).get('ac');
 
-let ALL = [];
-let MODE = 'deletion';
+let ALL=[],MODE='deletion';
 
 async function init(){
-  const meta = await fetch(`../data/${ac}/meta.json`).then(r=>r.json());
-  document.getElementById('title').innerText = meta.ac_no + " - " + meta.ac_name;
+const meta=await fetch(`../data/${ac}/meta.json`).then(r=>r.json());
+document.getElementById('title').innerText=meta.ac_no+" - "+meta.ac_name;
 
-  const phaseSel = document.getElementById('phase');
+meta.total_phases.forEach(p=>{
+const o=document.createElement('option');
+o.value=p;o.innerText=p;
+document.getElementById('phase').appendChild(o);
+});
 
-  meta.total_phases.forEach(p=>{
-    const o=document.createElement('option');
-    o.value=p;o.innerText="Phase "+p;
-    phaseSel.appendChild(o);
-  });
+document.getElementById('mode').onchange=e=>{MODE=e.target.value;loadPhase();}
+document.getElementById('phase').onchange=loadPhase;
+document.getElementById('search').oninput=render;
 
-  phaseSel.onchange = loadPhase;
-  document.getElementById('mode').onchange = e=>{
-    MODE=e.target.value;
-    loadPhase();
-  };
-
-  document.getElementById('search').oninput = render;
-
-  loadSummary(meta);
-  loadPhase();
+loadSummary(meta);
+loadPhase();
 }
 
 async function loadPhase(){
-  const p=document.getElementById('phase').value;
-  const txt = await fetch(`../data/${ac}/${MODE}/phase-${p}.csv`).then(r=>r.text());
-
-  ALL = parse(txt);
-  render();
-  renderParts();
+const p=document.getElementById('phase').value;
+const txt=await fetch(`../data/${ac}/${MODE}/phase-${p}.csv`).then(r=>r.text());
+ALL=parse(txt);
+render();
+renderParts();
 }
 
 function parse(t){
-  return t.split('\n').slice(1).map(r=>{
-    const c=r.split(',');
-    return {
-      part:parseInt(c[1])||0,
-      epic:c[4]||'N/A',
-      name:c[5]||'N/A',
-      gender:c[6]||'N/A',
-      religion:c[9]||'N/A'
-    }
-  });
+return t.split('\n').slice(1).map(r=>{
+const c=r.split(',');
+return{
+part:parseInt(c[1])||0,
+epic:c[4]||'N/A',
+name:c[5]||'N/A',
+gender:c[6]||'N/A',
+religion:c[9]||''
+}
+});
 }
 
 function render(){
-  const q=document.getElementById('search').value.toLowerCase();
-  const data=ALL.filter(d=>d.epic.toLowerCase().includes(q)||d.name.toLowerCase().includes(q));
+const q=document.getElementById('search').value.toLowerCase();
+const data=ALL.filter(d=>d.epic.toLowerCase().includes(q)||d.name.toLowerCase().includes(q));
+data.sort((a,b)=>a.part-b.part);
 
-  data.sort((a,b)=>a.part-b.part);
-
-  const tb=document.getElementById('tbody');
-  tb.innerHTML='';
-
-  data.forEach(d=>{
-    tb.innerHTML+=`<tr>
-      <td>${d.part}</td>
-      <td>${d.epic}</td>
-      <td>${d.name}</td>
-      <td>${d.gender}</td>
-    </tr>`;
-  });
+const tb=document.getElementById('tbody');tb.innerHTML='';
+data.forEach(d=>{
+tb.innerHTML+=`<tr><td>${d.part}</td><td>${d.epic}</td><td>${d.name}</td><td>${d.gender}</td></tr>`;
+});
 }
 
 function renderParts(){
-  const map={};
-  ALL.forEach(d=>{
-    if(!map[d.part]) map[d.part]=0;
-    map[d.part]++;
-  });
-
-  const div=document.getElementById('parts');
-  div.innerHTML='';
-
-  Object.keys(map).sort((a,b)=>a-b).forEach(p=>{
-    div.innerHTML+=`
-    <div class="card">
-      <div class="card-lbl">Part ${p}</div>
-      <div class="card-val">${map[p]}</div>
-    </div>`;
-  });
+const map={};
+ALL.forEach(d=>{if(!map[d.part])map[d.part]=0;map[d.part]++;});
+const div=document.getElementById('parts');div.innerHTML='';
+Object.keys(map).sort((a,b)=>a-b).forEach(p=>{
+div.innerHTML+=`<div class="card"><div>Part ${p}</div><div>${map[p]}</div></div>`;
+});
 }
 
 async function loadSummary(meta){
-  let total=0,m=0,f=0,mus=0;
+let total=0,m=0,f=0,mus=0;
 
-  for(let p of meta.total_phases){
-    const txt=await fetch(`../data/${ac}/deletion/phase-${p}.csv`).then(r=>r.text());
-    const d=parse(txt);
+for(let p of meta.total_phases){
+const txt=await fetch(`../data/${ac}/deletion/phase-${p}.csv`).then(r=>r.text());
+const d=parse(txt);
 
-    d.forEach(x=>{
-      total++;
-      if(x.gender==='Male') m++;
-      if(x.gender==='Female') f++;
-      if(x.religion==='Muslim') mus++;
-    });
-  }
+d.forEach(x=>{
+total++;
+if(x.gender==='Male')m++;
+if(x.gender==='Female')f++;
+if(x.religion==='Muslim')mus++;
+});
+}
 
-  const pop = await fetch(`../data/${ac}/muslim_population.json`).then(r=>r.json());
+const asm=await fetch(`../data/${ac}/muslim_population.json`).then(r=>r.json());
 
-  document.getElementById('summary').innerHTML=`
-    <div class="card"><div class="card-lbl">Total</div><div class="card-val">${total}</div></div>
-    <div class="card"><div class="card-lbl">Male</div><div class="card-val">${m}</div></div>
-    <div class="card"><div class="card-lbl">Female</div><div class="card-val">${f}</div></div>
-    <div class="card"><div class="card-lbl">Muslim %</div><div class="card-val">${((mus/pop.muslim_population)*100).toFixed(2)}%</div></div>
-  `;
+const csvPct=total?(mus/total)*100:0;
+const asmPct=asm.muslim_percentage;
+
+document.getElementById('summary').innerHTML=`
+<div class="card"><div>Total</div><div>${total}</div></div>
+<div class="card"><div>Male</div><div>${m}</div></div>
+<div class="card"><div>Female</div><div>${f}</div></div>
+<div class="card"><div>Muslim %</div><div>${csvPct.toFixed(2)}%</div></div>
+`;
+
+document.getElementById('asm-val').innerText=asmPct.toFixed(2)+'%';
+document.getElementById('csv-val').innerText=csvPct.toFixed(2)+'%';
+
+document.getElementById('asm-bar').style.width=asmPct+'%';
+document.getElementById('csv-bar').style.width=csvPct+'%';
 }
 
 init();
