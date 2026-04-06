@@ -1,0 +1,3 @@
+pdf_file,part_no,page_no,box_no,epic,name,gender,ocr_pass,warning,religion
+file1.pdf,176,1,1,ABC123,John Doe,Male,1,,Non-Muslim
+file2.pdf,177,1,1,XYZ456,Jane Doe,Female,1,,Muslim
