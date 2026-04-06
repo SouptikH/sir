@@ -1,1 +1,49 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1 id="title"></h1>
+<select id="phase"></select>
+<table border="1">
+<thead><tr><th>Part</th><th>EPIC</th><th>Name</th><th>Gender</th></tr></thead>
+<tbody id="tbody"></tbody>
+</table>
 
+<script>
+const ac = new URLSearchParams(location.search).get('ac');
+
+fetch(`../data/${ac}/meta.json`)
+.then(r=>r.json())
+.then(meta=>{
+  document.getElementById('title').innerText = meta.ac_name;
+  const sel = document.getElementById('phase');
+  meta.total_phases.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p;
+    o.innerText = p;
+    sel.appendChild(o);
+  });
+  load();
+  sel.onchange = load;
+});
+
+function load(){
+  const p = document.getElementById('phase').value;
+  fetch(`../data/${ac}/deletion/phase-${p}.csv`)
+  .then(r=>r.text())
+  .then(t=>{
+    const rows = t.split('\n').slice(1);
+    const tb = document.getElementById('tbody');
+    tb.innerHTML='';
+    rows.forEach(r=>{
+      const c = r.split(',');
+      if(c.length<6) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${c[1]}</td><td>${c[4]}</td><td>${c[5]}</td><td>${c[6]}</td>`;
+      tb.appendChild(tr);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
